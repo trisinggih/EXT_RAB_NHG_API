@@ -41,6 +41,13 @@ app.get("/pekerjaan", (req, res) => {
   });
 });
 
+app.get("/product", (req, res) => {
+  db.query("SELECT * FROM products", (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results.length ? results : []);
+  });
+});
+
 // GET pekerjaan berdasarkan project_id
 app.get("/project/:id", (req, res) => {
   const { id } = req.params;
