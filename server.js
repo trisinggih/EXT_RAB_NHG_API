@@ -41,7 +41,7 @@ app.get("/pekerjaan", (req, res) => {
 });
 
 // GET user by id
-app.get("/pekerjaan/:id", (req, res) => {
+app.get("/project/:id", (req, res) => {
   const { id } = req.params;
   db.query("SELECT * FROM project_pekerjaan WHERE project_id = ?", [id], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
