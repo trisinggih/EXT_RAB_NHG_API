@@ -83,7 +83,7 @@ app.post("/pekerjaan/:id/:pekerjaan_id", (req, res) => {
   const { product_id } = req.body;
 
   // Step 1: Ambil semua material dari produk terkait
-  const selectQuery = "SELECT material_id, jumlah, estimasi_price FROM product WHERE id = ?";
+  const selectQuery = "SELECT material_id, jumlah, estimasi_price FROM products WHERE id = ?";
   db.query(selectQuery, [product_id], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
 
