@@ -78,9 +78,9 @@ app.post("/project/:id", (req, res) => {
 });
 
 app.post("/pekerjaandata", (req, res) => {
-  const projectId = req.params.id;
-  const pekerjaanId = req.params.pekerjaan_id;
-  const { product_id } = req.body;
+  // const projectId = req.params.id;
+  // const pekerjaanId = req.params.pekerjaan_id;
+  const { product_id, project_id, pekerjaan_id } = req.body;
 
   // Step 1: Ambil semua material dari produk terkait
   const selectQuery = "SELECT material_id, jumlah, estimasi_price FROM product_materials WHERE product_id = ?";
@@ -93,8 +93,8 @@ app.post("/pekerjaandata", (req, res) => {
 
     // Step 2: Siapkan data insert untuk semua material
     const insertValues = rows.map((row) => [
-      projectId,
-      pekerjaanId,
+      project_id,
+      pekerjaan_id,
       row.material_id,
       row.jumlah,
       row.estimasi_price,
