@@ -62,6 +62,41 @@ app.post("/project/:id", (req, res) => {
   );
 });
 
+app.post("/pekerjaan/:id", (req, res) => {
+  const projectId = req.params.id;
+  const { product_id } = req.body;
+
+  // Step 1: Ambil semua material dari produk terkait
+  const selectQuery = "SELECT material_id, jumlah, estimasi_price FROM product WHERE id = ?";
+  db.query(selectQuery, [product_id], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Produk tidak ditemukan atau tidak memiliki material." });
+    }
+
+    // Step 2: Siapkan data insert untuk semua material
+    const insertValues = rows.map((row) => [
+      projectId,
+      row.material_id,
+      row.jumlah,
+      row.estimasi_price,
+    ]);
+
+    const insertQuery = `
+      INSERT INTO project_detail (project_id, material_id, jumlah, estimasi_price)
+      VALUES ?
+    `;
+
+    // Step 3: Lakukan insert sekaligus
+    db.query(insertQuery, [insertValues], (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ success: true, inserted: result.affectedRows });
+    });
+  });
+});
+
+
 
 // Jalankan server
 const PORT = 3111;
