@@ -50,6 +50,14 @@ app.get("/project/:id", (req, res) => {
   });
 });
 
+app.get("/projectdetail/:id", (req, res) => {
+  const { id } = req.params;
+  db.query("SELECT a.*, c.name FROM project_detail as a join pekerjaan as b on a.pekerjaan_id = b.id join material as c on a.material_id = c.id WHERE a.project_id = ?", [id], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results.length ? results : []);
+  });
+});
+
 app.post("/project/:id", (req, res) => {
   const { id, pekerjaan_id } = req.body;
   db.query(
