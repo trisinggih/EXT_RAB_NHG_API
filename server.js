@@ -10,8 +10,8 @@ app.use(express.json());
 const db = mysql.createConnection({
   host: "localhost",     
   user: "root",          
-  password: "",          
-  database: "rab_prod"     
+  password: "sususegar123?",          
+  database: "test_rab"     
 });
 
 // Tes koneksi
@@ -49,6 +49,19 @@ app.get("/project/:id", (req, res) => {
     res.json(results.length ? results : []);
   });
 });
+
+app.post("/project/:id", (req, res) => {
+  const { pekerjaan_id } = req.body;
+  db.query(
+    "INSERT INTO project_pekerjaan (project_id, pekerjaan_id) VALUES (?, ?)",
+    [id, pekerjaan_id],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ success: true, id: result.insertId });
+    }
+  );
+});
+
 
 // Jalankan server
 const PORT = 3111;
