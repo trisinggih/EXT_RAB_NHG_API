@@ -51,7 +51,7 @@ app.get("/project/:id", (req, res) => {
 });
 
 app.post("/project/:id", (req, res) => {
-  const { pekerjaan_id } = req.body;
+  const { id, pekerjaan_id } = req.body;
   db.query(
     "INSERT INTO project_pekerjaan (project_id, pekerjaan_id) VALUES (?, ?)",
     [id, pekerjaan_id],
