@@ -77,7 +77,7 @@ app.post("/project/:id", (req, res) => {
   );
 });
 
-app.post("/pekerjaan/:id/:pekerjaan_id", (req, res) => {
+app.post("/pekerjaandata", (req, res) => {
   const projectId = req.params.id;
   const pekerjaanId = req.params.pekerjaan_id;
   const { product_id } = req.body;
