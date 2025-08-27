@@ -44,7 +44,7 @@ app.get("/pekerjaan", (req, res) => {
 // GET pekerjaan berdasarkan project_id
 app.get("/project/:id", (req, res) => {
   const { id } = req.params;
-  db.query("SELECT * FROM project_pekerjaan WHERE project_id = ?", [id], (err, results) => {
+  db.query("SELECT a.*, b.name FROM project_pekerjaan as a join pekerjaan as b on a.pekerjaan_id = b.id WHERE a.project_id = ?", [id], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(results.length ? results : []);
   });
