@@ -33,6 +33,13 @@ app.get("/project", (req, res) => {
   });
 });
 
+app.get("/pekerjaan", (req, res) => {
+  db.query("SELECT * FROM pekerjaan", (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
 // GET user by id
 app.get("/pekerjaan/:id", (req, res) => {
   const { id } = req.params;
