@@ -25,30 +25,30 @@ db.connect((err) => {
 
 // ====== ROUTES ======
 
-// GET semua data users
+// GET semua data project dengan status 'Terbuka'
 app.get("/project", (req, res) => {
-  db.query("SELECT * FROM project where status = 'Terbuka'", (err, results) => {
+  db.query("SELECT * FROM project WHERE status = 'Terbuka'", (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
-    res.json(results);
+    res.json(results.length ? results : []);
   });
 });
 
+// GET semua data pekerjaan
 app.get("/pekerjaan", (req, res) => {
   db.query("SELECT * FROM pekerjaan", (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
-    res.json(results);
+    res.json(results.length ? results : []);
   });
 });
 
-// GET user by id
+// GET pekerjaan berdasarkan project_id
 app.get("/project/:id", (req, res) => {
   const { id } = req.params;
   db.query("SELECT * FROM project_pekerjaan WHERE project_id = ?", [id], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
-    res.json(results[0]);
+    res.json(results.length ? results : []);
   });
 });
-
 
 // Jalankan server
 const PORT = 3111;
