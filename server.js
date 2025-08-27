@@ -70,8 +70,9 @@ app.post("/project/:id", (req, res) => {
   );
 });
 
-app.post("/pekerjaan/:id", (req, res) => {
+app.post("/pekerjaan/:id/:pekerjaan_id", (req, res) => {
   const projectId = req.params.id;
+  const pekerjaanId = req.params.id;
   const { product_id } = req.body;
 
   // Step 1: Ambil semua material dari produk terkait
@@ -86,13 +87,14 @@ app.post("/pekerjaan/:id", (req, res) => {
     // Step 2: Siapkan data insert untuk semua material
     const insertValues = rows.map((row) => [
       projectId,
+      pekerjaanId,
       row.material_id,
       row.jumlah,
       row.estimasi_price,
     ]);
 
     const insertQuery = `
-      INSERT INTO project_detail (project_id, material_id, jumlah, estimasi_price)
+      INSERT INTO project_detail (project_id, pekerjaan_id, material_id, jumlah, estimasi_price)
       VALUES ?
     `;
 
