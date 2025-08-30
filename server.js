@@ -55,13 +55,13 @@ app.post("/register", async (req, res) => {
 
 // LOGIN
 app.post("/login", (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password)
-    return res.status(400).json({ error: "Username & password wajib diisi" });
+  const { email, password } = req.body;
+  if (!email || !password)
+    return res.status(400).json({ error: "Email & password wajib diisi" });
 
-  db.query("SELECT * FROM user WHERE username = ?", [username], async (err, rows) => {
+  db.query("SELECT * FROM users WHERE role_id = 5 and email = ?", [email], async (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
-    if (rows.length === 0) return res.status(401).json({ error: "User tidak ditemukan" });
+    if (rows.length === 0) return res.status(401).json({ error: "Email tidak ditemukan" });
 
     const user = rows[0];
 
@@ -70,7 +70,7 @@ app.post("/login", (req, res) => {
     if (!isMatch) return res.status(401).json({ error: "Password salah" });
 
     // Generate JWT token
-    const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, {
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, {
       expiresIn: "1h",
     });
 
