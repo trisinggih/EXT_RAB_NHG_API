@@ -1,119 +1,100 @@
 const express = require("express");
 const cors = require("cors");
 const mysql = require("mysql2");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 // Konfigurasi koneksi MySQL
-const db = mysql.createConnection({
-  host: "localhost",     
-  user: "root",          
-  password: "sususegar123?",          
-  database: "test_rab"     
+const db = mysql.createPool({
+  host: "localhost",
+  user: "root",
+  password: "sususegar123?",
+  database: "test_rab",
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
 });
 
-// Tes koneksi
-db.connect((err) => {
-  if (err) {
-    console.error("❌ Koneksi database gagal:", err);
-  } else {
-    console.log("✅ Terhubung ke MySQL");
+// Secret key untuk JWT
+const JWT_SECRET = "supersecretkey"; // sebaiknya taruh di .env
+
+// ================= AUTH =================
+
+// REGISTER
+app.post("/register", async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password)
+    return res.status(400).json({ error: "Username & password wajib diisi" });
+
+  try {
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Simpan user ke DB
+    db.query(
+      "INSERT INTO user (username, password) VALUES (?, ?)",
+      [username, hashedPassword],
+      (err, result) => {
+        if (err) {
+          if (err.code === "ER_DUP_ENTRY") {
+            return res.status(400).json({ error: "Username sudah digunakan" });
+          }
+          return res.status(500).json({ error: err.message });
+        }
+        res.json({ success: true, userId: result.insertId });
+      }
+    );
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
-// ====== ROUTES ======
+// LOGIN
+app.post("/login", (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password)
+    return res.status(400).json({ error: "Username & password wajib diisi" });
 
-// GET semua data project dengan status 'Terbuka'
-app.get("/project", (req, res) => {
-  db.query("SELECT * FROM project WHERE status = 'Terbuka'", (err, results) => {
+  db.query("SELECT * FROM user WHERE username = ?", [username], async (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
-    res.json(results.length ? results : []);
-  });
-});
+    if (rows.length === 0) return res.status(401).json({ error: "User tidak ditemukan" });
 
-// GET semua data pekerjaan
-app.get("/pekerjaan", (req, res) => {
-  db.query("SELECT * FROM pekerjaan", (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(results.length ? results : []);
-  });
-});
+    const user = rows[0];
 
-app.get("/product", (req, res) => {
-  db.query("SELECT * FROM products", (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(results.length ? results : []);
-  });
-});
+    // Bandingkan password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(401).json({ error: "Password salah" });
 
-// GET pekerjaan berdasarkan project_id
-app.get("/project/:id", (req, res) => {
-  const { id } = req.params;
-  db.query("SELECT a.*, b.name FROM project_pekerjaan as a join pekerjaan as b on a.pekerjaan_id = b.id WHERE a.project_id = ?", [id], (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(results.length ? results : []);
-  });
-});
-
-app.get("/projectdetail/:id/:pekerjaan_id", (req, res) => {
-  const { id, pekerjaan_id } = req.params;
-  db.query("SELECT a.*, c.name FROM project_detail as a join pekerjaan as b on a.pekerjaan_id = b.id join material as c on a.material_id = c.id WHERE a.project_id = ? and a.pekerjaan_id = ?", [id, pekerjaan_id], (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(results.length ? results : []);
-  });
-});
-
-app.post("/project/:id", (req, res) => {
-  const { id, pekerjaan_id } = req.body;
-  db.query(
-    "INSERT INTO project_pekerjaan (project_id, pekerjaan_id) VALUES (?, ?)",
-    [id, pekerjaan_id],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ success: true, id: result.insertId });
-    }
-  );
-});
-
-app.post("/pekerjaandata", (req, res) => {
-  // const projectId = req.params.id;
-  // const pekerjaanId = req.params.pekerjaan_id;
-  const { product_id, project_id, pekerjaan_id } = req.body;
-
-  // Step 1: Ambil semua material dari produk terkait
-  const selectQuery = "SELECT material_id, jumlah, estimasi_price FROM product_materials WHERE product_id = ?";
-  db.query(selectQuery, [product_id], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-
-    if (rows.length === 0) {
-      return res.status(404).json({ error: "Produk tidak ditemukan atau tidak memiliki material." });
-    }
-
-    // Step 2: Siapkan data insert untuk semua material
-    const insertValues = rows.map((row) => [
-      project_id,
-      pekerjaan_id,
-      row.material_id,
-      row.jumlah,
-      row.estimasi_price,
-    ]);
-
-    const insertQuery = `
-      INSERT INTO project_detail (project_id, pekerjaan_id, material_id, jumlah, estimasi_price)
-      VALUES ?
-    `;
-
-    // Step 3: Lakukan insert sekaligus
-    db.query(insertQuery, [insertValues], (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ success: true, inserted: result.affectedRows });
+    // Generate JWT token
+    const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, {
+      expiresIn: "1h",
     });
+
+    res.json({ success: true, token });
   });
 });
 
+// Middleware proteksi route
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (!token) return res.sendStatus(401);
 
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.sendStatus(403);
+    req.user = user; // simpan data user di req
+    next();
+  });
+}
+
+// Contoh route yang dilindungi
+app.get("/profile", authenticateToken, (req, res) => {
+  res.json({ message: "Halo, ini profil kamu!", user: req.user });
+});
 
 // Jalankan server
 const PORT = 3111;
