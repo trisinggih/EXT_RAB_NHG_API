@@ -66,7 +66,9 @@ app.post("/login", (req, res) => {
     const user = rows[0];
 
     // Bandingkan password
-    const isMatch = await bcrypt.compare(password, user.password);
+    const hash = user.password.replace(/^\$2y\$/, "$2b$");
+
+    const isMatch = await bcrypt.compare(password, hash);
     if (!isMatch) return res.status(401).json({ error: "Password salah" });
 
     // Generate JWT token
