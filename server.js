@@ -120,6 +120,15 @@ app.get("/profile", authenticateToken, (req, res) => {
   });
 });
 
+app.get("/project", (req, res) => {
+  db.query("SELECT * FROM project", (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+
+
 // Jalankan server
 app.listen(PORT, () =>
   console.log(`🚀 Server jalan di http://localhost:${PORT}`)
