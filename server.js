@@ -10,6 +10,7 @@ const PORT = 3111;
 
 // Middleware
 app.use(cors());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // Konfigurasi koneksi MySQL
