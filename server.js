@@ -138,8 +138,11 @@ app.get("/project", (req, res) => {
       if (err) return res.status(500).json({ error: err.message });
       res.json(results.map(project => ({
         ...project,
-        pekerjaan: JSON.parse(project.pekerjaan || '[]')
+        pekerjaan: typeof project.pekerjaan === 'string'
+          ? JSON.parse(project.pekerjaan)
+          : (project.pekerjaan || [])
       })));
+
     }
   );
 });
