@@ -129,16 +129,16 @@ app.get("/project", (req, res) => {
 
 app.post("/simpanproject",(req, res) =>{
 
-  const {nama_project, deskripsi, tanggal_mulai, tanggal_selesai} = req.body;
+  const {name, description, client_id, start_date, end_date} = req.body;
 
-  if (!nama_project || !deskripsi || !tanggal_mulai || !tanggal_selesai )
+  if (!name || !description || !client_id || !start_date || !end_date)
     return res
       .status(400)
       .json({ error: "Semua field wajib diisi" });
 
   db.query(
-    "INSERT INTO project (nama_project, deskripsi, tanggal_mulai, tanggal_selesai) VALUES (?, ?, ?, ?)",
-    [nama_project, deskripsi, tanggal_mulai, tanggal_selesai],
+    "INSERT INTO project (name, description, client_id, start_date, end_date) VALUES (?, ?, ?, ?, ?)",
+    [name, description, client_id, start_date, end_date],
     (err, result) => {
       if (err) {
         return res.status(500).json({ error: err.message });
@@ -149,6 +149,13 @@ app.post("/simpanproject",(req, res) =>{
 
 })
 
+
+app.get("/clients", (req, res) => {
+  db.query("SELECT * FROM client", (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
 
 
 // Jalankan server
