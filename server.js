@@ -3,8 +3,12 @@ const cors = require("cors");
 const mysql = require("mysql2");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+require("dotenv").config();
 
 const app = express();
+const PORT = 3111;
+
+// Middleware
 app.use(cors());
 app.use(express.json());
 
@@ -19,29 +23,32 @@ const db = mysql.createPool({
   queueLimit: 0,
 });
 
-// Secret key untuk JWT
-const JWT_SECRET = "supersecretkey"; // sebaiknya taruh di .env
+// Secret key dari .env
+const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
 
 // ================= AUTH =================
 
 // REGISTER
 app.post("/register", async (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password)
-    return res.status(400).json({ error: "Username & password wajib diisi" });
+  const { username, email, password } = req.body;
+
+  if (!username || !email || !password)
+    return res
+      .status(400)
+      .json({ error: "Username, email & password wajib diisi" });
 
   try {
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Simpan user ke DB
     db.query(
-      "INSERT INTO user (username, password) VALUES (?, ?)",
-      [username, hashedPassword],
+      "INSERT INTO users (username, email, password, role_id) VALUES (?, ?, ?, 5)",
+      [username, email, hashedPassword],
       (err, result) => {
         if (err) {
           if (err.code === "ER_DUP_ENTRY") {
-            return res.status(400).json({ error: "Username sudah digunakan" });
+            return res
+              .status(400)
+              .json({ error: "Username atau email sudah digunakan" });
           }
           return res.status(500).json({ error: err.message });
         }
@@ -56,48 +63,63 @@ app.post("/register", async (req, res) => {
 // LOGIN
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
+
   if (!email || !password)
-    return res.status(400).json({ error: "Email & password wajib diisi" });
+    return res
+      .status(400)
+      .json({ error: "Email & password wajib diisi" });
 
-  db.query("SELECT * FROM users WHERE role_id = 5 and email = ?", [email], async (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (rows.length === 0) return res.status(401).json({ error: "Email tidak ditemukan" });
+  db.query(
+    "SELECT * FROM users WHERE role_id = 5 AND email = ?",
+    [email],
+    async (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (rows.length === 0)
+        return res.status(401).json({ error: "Email tidak ditemukan" });
 
-    const user = rows[0];
+      const user = rows[0];
 
-    // Bandingkan password
-    const hash = user.password.replace(/^\$2y\$/, "$2b$");
+      // Ganti $2y$ ke $2b$ jika perlu (tergantung bcrypt hash-nya)
+      const hash = user.password.replace(/^\$2y\$/, "$2b$");
+      const isMatch = await bcrypt.compare(password, hash);
 
-    const isMatch = await bcrypt.compare(password, hash);
-    if (!isMatch) return res.status(401).json({ error: "Password salah" });
+      if (!isMatch)
+        return res.status(401).json({ error: "Password salah" });
 
-    // Generate JWT token
-    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, {
-      expiresIn: "1h",
-    });
+      const token = jwt.sign(
+        { id: user.id, email: user.email, username: user.username },
+        JWT_SECRET,
+        { expiresIn: "1h" }
+      );
 
-    res.json({ success: true, token });
-  });
+      res.json({ success: true, token });
+    }
+  );
 });
 
-// Middleware proteksi route
+// Middleware: proteksi JWT
 function authenticateToken(req, res, next) {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
+
   if (!token) return res.sendStatus(401);
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) return res.sendStatus(403);
-    req.user = user; // simpan data user di req
+    req.user = user;
     next();
   });
 }
 
-// Contoh route yang dilindungi
+// Protected Route
 app.get("/profile", authenticateToken, (req, res) => {
-  res.json({ message: "Halo, ini profil kamu!", user: req.user });
+  res.json({
+    message: "Halo, ini profil kamu!",
+    user: req.user,
+  });
 });
 
 // Jalankan server
-const PORT = 3111;
-app.listen(PORT, () => console.log(`🚀 Server jalan di http://localhost:${PORT}`));
+app.listen(PORT, () =>
+  console.log(`🚀 Server jalan di http://localhost:${PORT}`)
+);
