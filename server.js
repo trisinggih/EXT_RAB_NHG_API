@@ -137,7 +137,7 @@ app.post("/simpanproject",(req, res) =>{
       .json({ error: "Semua field wajib diisi" });
 
   db.query(
-    "INSERT INTO project (name, description, client_id, start_date, end_date) VALUES (?, ?, ?, ?, ?)",
+    "INSERT INTO project (name, description, client_id, start_date, end_date, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())",
     [name, description, client_id, start_date, end_date],
     (err, result) => {
       if (err) {
