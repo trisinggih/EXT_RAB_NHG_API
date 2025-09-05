@@ -127,6 +127,28 @@ app.get("/project", (req, res) => {
   });
 });
 
+app.post("/simpanproject",(req, res) =>{
+
+  const {nama_project, deskripsi, tanggal_mulai, tanggal_selesai} = req.body;
+
+  if (!nama_project || !deskripsi || !tanggal_mulai || !tanggal_selesai )
+    return res
+      .status(400)
+      .json({ error: "Semua field wajib diisi" });
+
+  db.query(
+    "INSERT INTO project (nama_project, deskripsi, tanggal_mulai, tanggal_selesai) VALUES (?, ?, ?, ?)",
+    [nama_project, deskripsi, tanggal_mulai, tanggal_selesai],
+    (err, result) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      res.json({ success: true, projectId: result.insertId });
+    }
+  );
+
+})
+
 
 
 // Jalankan server
