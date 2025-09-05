@@ -121,10 +121,27 @@ app.get("/profile", authenticateToken, (req, res) => {
 });
 
 app.get("/project", (req, res) => {
-  db.query("SELECT * FROM project", (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(results);
-  });
+  db.query(
+    `SELECT 
+      p.*, 
+      JSON_ARRAYAGG(
+        JSON_OBJECT(
+          'id', pekerjaan.id,
+          'name', pekerjaan.name
+        )
+      ) AS pekerjaan 
+    FROM project p
+    LEFT JOIN project_pekerjaan pp ON p.id = pp.project_id
+    LEFT JOIN pekerjaan ON pp.pekerjaan_id = pekerjaan.id
+    GROUP BY p.id`,
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(results.map(project => ({
+        ...project,
+        pekerjaan: JSON.parse(project.pekerjaan || '[]')
+      })));
+    }
+  );
 });
 
 app.post("/simpanproject",(req, res) =>{
