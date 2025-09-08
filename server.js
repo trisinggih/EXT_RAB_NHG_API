@@ -190,7 +190,7 @@ app.get("/pekerjaan", (req, res) => {
 app.get("/projectpekerjaan", (req, res) => {
   const { project_id } = req.query;
 
-  let query = "SELECT a.*, b.name AS project_name FROM pekerjaan a LEFT JOIN project b ON a.project_id = b.id";
+  let query = "SELECT a.*, b.name AS project_name FROM project_pekerjaan a LEFT JOIN pekerjaan b ON a.pekerjaan_id = b.id";
   const params = [];
 
   if (project_id) {
