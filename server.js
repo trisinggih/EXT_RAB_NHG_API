@@ -177,6 +177,30 @@ app.get("/clients", (req, res) => {
   });
 });
 
+app.get("/pekerjaan", (req, res) => {
+  db.query("SELECT * FROM pekerjaan", (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+
+app.get("/projectpekerjaan", (req, res) => {
+  const { project_id } = req.query;
+
+  let query = "SELECT a.*, b.name AS project_name FROM pekerjaan a LEFT JOIN project b ON a.project_id = b.id";
+  const params = [];
+
+  if (project_id) {
+    query += " WHERE a.project_id = ?";
+    params.push(project_id);
+  }
+
+  db.query(query, params, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
 
 // Jalankan server
 app.listen(PORT, () =>
