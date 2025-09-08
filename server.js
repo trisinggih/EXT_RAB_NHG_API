@@ -3,6 +3,8 @@ const cors = require("cors");
 const mysql = require("mysql2");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const multer = require("multer");
+const path = require("path");
 require("dotenv").config();
 
 const app = express();
@@ -200,6 +202,39 @@ app.get("/projectpekerjaan", (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(results);
   });
+});
+
+
+// Konfigurasi multer untuk upload file
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/"); // Folder untuk menyimpan file
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname)); // Nama file unik
+  },
+});
+
+const upload = multer({ storage });
+
+app.post("/uploadfoto", upload.single("gambar"), (req, res) => {
+  const { project_id, keterangan } = req.body;
+
+  if (!project_id || !req.file)
+    return res.status(400).json({ error: "Project ID dan gambar wajib diisi" });
+
+  const gambar = req.file.filename;
+
+  db.query(
+    "INSERT INTO project_gambar (project_id, gambar, keterangan) VALUES (?, ?, ?)",
+    [project_id, gambar, keterangan],
+    (err, result) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      res.json({ success: true, gambarId: result.insertId });
+    }
+  );
 });
 
 // Jalankan server
