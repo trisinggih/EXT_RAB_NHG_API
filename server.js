@@ -215,11 +215,6 @@ app.get("/projectgambar", (req, res) => {
     params.push(project_id);
   }
 
-  if (project_id) {
-    query += " WHERE a.project_id = ?";
-    params.push(project_id);
-  }
-
   db.query(query, params, (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(results);
