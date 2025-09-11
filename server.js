@@ -190,7 +190,25 @@ app.get("/pekerjaan", (req, res) => {
 app.get("/projectpekerjaan", (req, res) => {
   const { project_id } = req.query;
 
-  let query = "SELECT a.*, b.name AS project_name FROM project_pekerjaan a LEFT JOIN pekerjaan b ON a.pekerjaan_id = b.id";
+  let query = `
+     SELECT 
+      a.*, 
+      b.name AS pekerjaan_name,
+      (
+        SELECT JSON_ARRAYAGG(
+          JSON_OBJECT(
+            'id', d.id,
+            'tambahan', d.tambahan,
+            'estimasi_price', d.estimasi_price
+          )
+        )
+        FROM project_detail d
+        WHERE d.project_id = a.id
+      ) AS detail
+    FROM project_pekerjaan a
+    LEFT JOIN pekerjaan b ON a.pekerjaan_id = b.id
+  `;
+
   const params = [];
 
   if (project_id) {
@@ -200,9 +218,17 @@ app.get("/projectpekerjaan", (req, res) => {
 
   db.query(query, params, (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
-    res.json(results);
+
+    // parsing JSON field "detail"
+    const formatted = results.map(row => ({
+      ...row,
+      detail: row.detail ? JSON.parse(row.detail) : []
+    }));
+
+    res.json(formatted);
   });
 });
+
 
 app.get("/projectgambar", (req, res) => {
   const { project_id } = req.query;
