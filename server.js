@@ -294,6 +294,8 @@ app.post("/uploadfoto", upload.single("gambar"), (req, res) => {
   );
 });
 
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 // Jalankan server
 app.listen(PORT, () =>
   console.log(`🚀 Server jalan di http://localhost:${PORT}`)
