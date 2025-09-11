@@ -204,6 +204,28 @@ app.get("/projectpekerjaan", (req, res) => {
   });
 });
 
+app.get("/projectgambar", (req, res) => {
+  const { project_id } = req.query;
+
+  let query = "SELECT a.*, b.name AS project_name FROM project_gambar a LEFT JOIN project b ON a.project_id = b.id";
+  const params = [];
+
+  if (project_id) {
+    query += " WHERE a.project_id = ?";
+    params.push(project_id);
+  }
+
+  if (project_id) {
+    query += " WHERE a.project_id = ?";
+    params.push(project_id);
+  }
+
+  db.query(query, params, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
 
 // Konfigurasi multer untuk upload file
 const storage = multer.diskStorage({
