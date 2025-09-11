@@ -219,15 +219,29 @@ app.get("/projectpekerjaan", (req, res) => {
   db.query(query, params, (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
 
-    // parsing JSON field "detail"
-    const formatted = results.map(row => ({
-      ...row,
-      detail: row.detail ? JSON.parse(row.detail) : []
-    }));
+    // Format hasil query agar detail selalu array
+    const formatted = results.map(row => {
+      let detail = [];
+
+      if (row.detail) {
+        if (typeof row.detail === "string") {
+          try {
+            detail = JSON.parse(row.detail);
+          } catch (e) {
+            console.error("JSON parse error:", e.message);
+          }
+        } else if (typeof row.detail === "object") {
+          detail = row.detail;
+        }
+      }
+
+      return { ...row, detail };
+    });
 
     res.json(formatted);
   });
 });
+
 
 
 app.get("/projectgambar", (req, res) => {
