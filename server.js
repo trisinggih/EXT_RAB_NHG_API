@@ -199,7 +199,9 @@ app.get("/projectpekerjaan", (req, res) => {
           JSON_OBJECT(
             'id', d.id,
             'tambahan', d.tambahan,
-            'estimasi_price', d.estimasi_price
+            'estimasi_price', d.estimasi_price,
+            'jumlah', d.jumlah, 
+            'satuan', d.satuan
           )
         )
         FROM project_detail d
