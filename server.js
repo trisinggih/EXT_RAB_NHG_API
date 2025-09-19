@@ -263,53 +263,56 @@ app.get("/projectpekerjaan", (req, res) => {
   const { project_id } = req.query;
 
   let query = `
-     SELECT 
-      a.*, 
-      b.name AS pekerjaan_name,
-      (
-        SELECT JSON_ARRAYAGG(
-          JSON_OBJECT(
-            'id', d.id,
-            'tambahan', d.tambahan,
-            'estimasi_price', d.estimasi_price,
-            'jumlah', d.jumlah, 
-            'satuan', d.satuan
-          )
-        )
-        FROM project_detail d
-        WHERE d.project_id = a.id
-      ) AS detail
-    FROM project_pekerjaan a
-    LEFT JOIN pekerjaan b ON a.pekerjaan_id = b.id
+    SELECT 
+        p.id,
+        p.name AS project_name,
+        JSON_ARRAYAGG(
+            JSON_OBJECT(
+                'id', pj.id,
+                'pekerjaan_name', pkj.name,
+                'detail', (
+                    SELECT JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'id', d.id,
+                            'tambahan', d.tambahan,
+                            'estimasi_price', d.estimasi_price,
+                            'jumlah', d.jumlah,
+                            'satuan', d.satuan,
+                            'rab', d.rab
+                        )
+                    )
+                    FROM project_detail d
+                    WHERE d.project_id = p.id
+                      AND d.pekerjaan_id = pj.pekerjaan_id
+                )
+            )
+        ) AS pekerjaan_list
+    FROM project p
+    LEFT JOIN project_pekerjaan pj ON pj.project_id = p.id
+    LEFT JOIN pekerjaan pkj ON pkj.id = pj.pekerjaan_id
   `;
 
   const params = [];
-
   if (project_id) {
-    query += " WHERE a.project_id = ?";
+    query += " WHERE p.id = ? ";
     params.push(project_id);
   }
+
+  query += " GROUP BY p.id, p.name;";
 
   db.query(query, params, (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
 
-    // Format hasil query agar detail selalu array
     const formatted = results.map(row => {
-      let detail = [];
-
-      if (row.detail) {
-        if (typeof row.detail === "string") {
-          try {
-            detail = JSON.parse(row.detail);
-          } catch (e) {
-            console.error("JSON parse error:", e.message);
-          }
-        } else if (typeof row.detail === "object") {
-          detail = row.detail;
+      let pekerjaanList = [];
+      if (row.pekerjaan_list) {
+        try {
+          pekerjaanList = JSON.parse(row.pekerjaan_list);
+        } catch (e) {
+          console.error("JSON parse error:", e.message);
         }
       }
-
-      return { ...row, detail };
+      return { ...row, pekerjaan_list: pekerjaanList };
     });
 
     res.json(formatted);
