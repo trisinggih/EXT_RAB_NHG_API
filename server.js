@@ -283,10 +283,9 @@ app.get("/projectpekerjaan", (req, res) => {
                     )
                     FROM project_detail d
                     WHERE d.project_id = p.id
-                      AND d.pekerjaan_id = pj.pekerjaan_id
                 )
             )
-        ) AS pekerjaan_list
+        ) AS detail
     FROM project p
     LEFT JOIN project_pekerjaan pj ON pj.project_id = p.id
     LEFT JOIN pekerjaan pkj ON pkj.id = pj.pekerjaan_id
