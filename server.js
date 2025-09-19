@@ -122,32 +122,88 @@ app.get("/profile", authenticateToken, (req, res) => {
   });
 });
 
+
+
 app.get("/project", (req, res) => {
-  db.query(
-    `SELECT 
+  const { bulan, tahun } = req.query;
+
+  if (!tahun) {
+    return res.status(400).json({ error: "Parameter tahun wajib diisi" });
+  }
+
+  const bulanMap = {
+    Januari: 1,
+    Februari: 2,
+    Maret: 3,
+    April: 4,
+    Mei: 5,
+    Juni: 6,
+    Juli: 7,
+    Agustus: 8,
+    September: 9,
+    Oktober: 10,
+    November: 11,
+    Desember: 12,
+  };
+
+  let bulanNum = null;
+  if (bulan && bulanMap[bulan]) {
+    bulanNum = bulanMap[bulan];
+  }
+
+  let sql = `
+    SELECT 
       p.*, 
-      JSON_ARRAYAGG(
-        JSON_OBJECT(
-          'id', pekerjaan.id,
-          'name', pekerjaan.name
-        )
+      COALESCE(
+        JSON_ARRAYAGG(
+          JSON_OBJECT(
+            'id', pekerjaan.id,
+            'name', pekerjaan.name
+          )
+        ), JSON_ARRAY()
       ) AS pekerjaan 
     FROM project p
     LEFT JOIN project_pekerjaan pp ON p.id = pp.project_id
     LEFT JOIN pekerjaan ON pp.pekerjaan_id = pekerjaan.id
-    GROUP BY p.id`,
-    (err, results) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json(results.map(project => ({
-        ...project,
-        pekerjaan: typeof project.pekerjaan === 'string'
-          ? JSON.parse(project.pekerjaan)
-          : (project.pekerjaan || [])
-      })));
+    WHERE YEAR(p.start_date) = ? OR YEAR(p.end_date) = ?
+  `;
 
-    }
-  );
+  const params = [tahun, tahun];
+
+  if (bulanNum) {
+    sql += `
+      AND (
+        MONTH(p.start_date) = ?
+        OR MONTH(p.end_date) = ?
+      )
+    `;
+    params.push(bulanNum, bulanNum);
+  }
+
+  sql += " GROUP BY p.id";
+
+  db.query(sql, params, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+
+    const formatted = results.map(project => ({
+      ...project,
+      pekerjaan: (() => {
+        try {
+          return typeof project.pekerjaan === "string"
+            ? JSON.parse(project.pekerjaan)
+            : project.pekerjaan || [];
+        } catch {
+          return [];
+        }
+      })()
+    }));
+
+    res.json(formatted);
+  });
 });
+
+
+
 
 app.post("/simpanproject",(req, res) =>{
 
