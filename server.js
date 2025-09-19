@@ -184,21 +184,7 @@ app.get("/project", (req, res) => {
 
   db.query(sql, params, (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
-
-    const formatted = results.map(project => ({
-      ...project,
-      pekerjaan: (() => {
-        try {
-          return typeof project.pekerjaan === "string"
-            ? JSON.parse(project.pekerjaan)
-            : project.pekerjaan || [];
-        } catch {
-          return [];
-        }
-      })()
-    }));
-
-    res.json(formatted);
+    res.json(results);
   });
 });
 
