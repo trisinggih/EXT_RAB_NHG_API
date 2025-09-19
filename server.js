@@ -213,6 +213,28 @@ app.post("/simpanproject",(req, res) =>{
 
 })
 
+app.post("/simpanproduct",(req, res) =>{
+
+  const {keterangan, product_id, project_id} = req.body;
+
+  if (!product_id || !project_id )
+    return res
+      .status(400)
+      .json({ error: "Semua field wajib diisi" });
+
+  db.query(
+    "INSERT INTO project_product (keterangan, product_id, project_id) VALUES (?, ?, ?)",
+    [keterangan, product_id, project_id],
+    (err, result) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      res.json({ success: true, projectId: result.insertId });
+    }
+  );
+
+})
+
 
 app.get("/clients", (req, res) => {
   db.query("SELECT * FROM client", (err, results) => {
