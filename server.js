@@ -229,6 +229,14 @@ app.get("/pekerjaan", (req, res) => {
 });
 
 
+app.get("/products", (req, res) => {
+  db.query("SELECT * FROM products", (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+
 app.get("/projectpekerjaan", (req, res) => {
   const { project_id } = req.query;
 
