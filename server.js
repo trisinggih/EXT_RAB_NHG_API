@@ -165,7 +165,7 @@ app.get("/project", (req, res) => {
     FROM project p
     LEFT JOIN project_pekerjaan pp ON p.id = pp.project_id
     LEFT JOIN pekerjaan ON pp.pekerjaan_id = pekerjaan.id
-    WHERE YEAR(p.start_date) = ? OR YEAR(p.end_date) = ?
+    WHERE YEAR(p.start_date) = ? AND YEAR(p.end_date) = ?
   `;
 
   const params = [tahun, tahun];
