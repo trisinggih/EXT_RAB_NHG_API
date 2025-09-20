@@ -263,10 +263,9 @@ app.get("/projectpekerjaan", (req, res) => {
   const { project_id } = req.query;
 
   let query = `
-     SELECT 
-      a.*, 
-      b.name AS pekerjaan_name,
-      (
+select DISTINCT a.project_id, a.pekerjaan_id, 
+	c.name as pekerjaan_name ,
+	(
         SELECT JSON_ARRAYAGG(
           JSON_OBJECT(
             'id', d.id,
@@ -277,10 +276,9 @@ app.get("/projectpekerjaan", (req, res) => {
           )
         )
         FROM project_detail d
-        WHERE d.project_id = a.id
+        WHERE d.pekerjaan_id = a.pekerjaan_id 
       ) AS detail
-    FROM project_pekerjaan a
-    LEFT JOIN pekerjaan b ON a.pekerjaan_id = b.id 
+from project_detail as a join product_pekerjaan as b on a.pekerjaan_id=b.id  join pekerjaan as c on b.pekerjaan_id=c.id
   `;
 
   const params = [];
