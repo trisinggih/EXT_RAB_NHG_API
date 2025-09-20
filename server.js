@@ -157,14 +157,13 @@ app.get("/project", (req, res) => {
       COALESCE(
         JSON_ARRAYAGG(
           JSON_OBJECT(
-            'id', pekerjaan.id,
-            'name', pekerjaan.name
+            'product_id', pp.product_id,
+            'keterangan', pp.keterangan
           )
         ), JSON_ARRAY()
-      ) AS pekerjaan 
+      ) AS project_product 
     FROM project p
-    LEFT JOIN project_pekerjaan pp ON p.id = pp.project_id
-    LEFT JOIN pekerjaan ON pp.pekerjaan_id = pekerjaan.id
+    LEFT JOIN project_product pp ON pp.project_id = p.id
     WHERE YEAR(p.start_date) = ? AND YEAR(p.end_date) = ?
   `;
 
