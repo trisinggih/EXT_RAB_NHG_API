@@ -4,6 +4,8 @@ const mysql = require("mysql2");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
+const nodemailer = require('nodemailer');
+
 const path = require("path");
 require("dotenv").config();
 
