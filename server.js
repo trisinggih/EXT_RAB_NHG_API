@@ -17,7 +17,7 @@ app.use(express.json());
 
 // Konfigurasi koneksi MySQL
 const db = mysql.createPool({
-  host: "localhost",
+  host: "173.249.20.193",
   user: "root",
   password: "sususegar123?",
   database: "test_rab",
@@ -28,6 +28,40 @@ const db = mysql.createPool({
 
 // Secret key dari .env
 const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
+
+// === Konfigurasi transporter (sekali saja) ===
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASS,
+  },
+});
+
+// === Fungsi reusable untuk kirim email ===
+async function sendEmail(to, subject, text, html = null) {
+  try {
+    const mailOptions = {
+      from: process.env.GMAIL_USER,
+      to,
+      subject,
+      text,
+      html,
+    };
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email terkirim:', info.response);
+    return { ok: true, messageId: info.messageId, response: info.response };
+  } catch (err) {
+    console.error('Gagal kirim email:', err);
+    return { ok: false, error: err.message };
+  }
+}
+
+// app.post('/send', async (req, res) => {
+//   const { to, subject, text, html } = req.body;
+//   const result = await sendEmail(to, subject, text, html);
+//   res.json(result);
+// });
 
 // ================= AUTH =================
 
@@ -190,27 +224,68 @@ app.get("/project", (req, res) => {
 
 
 
-app.post("/simpanproject",(req, res) =>{
+app.post("/simpanproject", (req, res) => {
+  const { name, description, client_id, start_date, end_date } = req.body;
 
-  const {name, description, client_id, start_date, end_date} = req.body;
+  if (!name || !description || !client_id || !start_date || !end_date) {
+    return res.status(400).json({ error: "Semua field wajib diisi" });
+  }
 
-  if (!name || !description || !client_id || !start_date || !end_date)
-    return res
-      .status(400)
-      .json({ error: "Semua field wajib diisi" });
-
+  // insert ke tabel project
   db.query(
     "INSERT INTO project (name, description, client_id, start_date, end_date, created_at, updated_at) VALUES (?, ?, ?, ?, ?, NOW(), NOW())",
     [name, description, client_id, start_date, end_date],
     (err, result) => {
       if (err) {
+        console.error("Insert project error:", err);
         return res.status(500).json({ error: err.message });
       }
-      res.json({ success: true, projectId: result.insertId });
+
+      const projectId = result.insertId;
+
+      // ambil user dengan role_id = 1
+      db.query("SELECT email FROM users WHERE role_id = 1", async (err2, users) => {
+        if (err2) {
+          console.error("Query user error:", err2);
+          return res.status(500).json({ error: err2.message });
+        }
+
+        if (users.length === 0) {
+          return res.json({ success: true, projectId, message: "Project dibuat, tapi tidak ada user dengan role_id = 1" });
+        }
+
+        // kirim email ke semua user dengan role_id = 1
+        const emailList = users.map((u) => u.email).join(",");
+
+        const html = `
+          <h2>Notifikasi Project Baru</h2>
+          <p>Project <strong>${name}</strong> telah dibuat.</p>
+          <p>${description}</p>
+          <hr>
+          <p>Client ID: ${client_id}</p>
+          <p>Mulai: ${start_date}</p>
+          <p>Selesai: ${end_date}</p>
+        `;
+
+        try {
+          const resultEmail = await sendEmail(
+            emailList,
+            `Notifikasi: Project "${name}" telah dibuat`,
+            description,
+            html
+          );
+          console.log("Email result:", resultEmail);
+        } catch (e) {
+          console.error("Gagal kirim email:", e);
+        }
+
+        // kirim respons ke client
+        res.json({ success: true, projectId });
+      });
     }
   );
+});
 
-})
 
 app.post("/simpanproduct",(req, res) =>{
 
