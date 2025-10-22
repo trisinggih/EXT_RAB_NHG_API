@@ -263,10 +263,6 @@ app.post("/simpanproject", (req, res) => {
           <h2>Notifikasi Project Baru</h2>
           <p>Project <strong>${name}</strong> telah dibuat.</p>
           <p>${description}</p>
-          <hr>
-          <p>Client ID: ${client_id}</p>
-          <p>Mulai: ${start_date}</p>
-          <p>Selesai: ${end_date}</p>
         `;
 
         try {
@@ -289,27 +285,124 @@ app.post("/simpanproject", (req, res) => {
 });
 
 
-app.post("/simpanproduct",(req, res) =>{
+// app.post("/simpanproduct",(req, res) =>{
 
-  const {keterangan, product_id, project_id} = req.body;
+//   const {keterangan, product_id, project_id} = req.body;
 
-  if (!product_id || !project_id )
-    return res
-      .status(400)
-      .json({ error: "Semua field wajib diisi" });
+//   if (!product_id || !project_id )
+//     return res
+//       .status(400)
+//       .json({ error: "Semua field wajib diisi" });
 
+//   db.query(
+//     "INSERT INTO project_product (keterangan, product_id, project_id) VALUES (?, ?, ?)",
+//     [keterangan, product_id, project_id],
+//     (err, result) => {
+//       if (err) {
+//         return res.status(500).json({ error: err.message });
+//       }
+//       res.json({ success: true, projectId: result.insertId });
+//     }
+//   );
+
+// })
+
+
+app.post("/simpanproduct", (req, res) => {
+  const { keterangan, product_id, project_id } = req.body;
+
+  if (!product_id || !project_id) {
+    return res.status(400).json({ error: "Semua field wajib diisi" });
+  }
+
+  // 1️⃣ Insert ke tabel project_product
   db.query(
     "INSERT INTO project_product (keterangan, product_id, project_id) VALUES (?, ?, ?)",
     [keterangan, product_id, project_id],
     (err, result) => {
       if (err) {
+        console.error("Insert project_product error:", err);
         return res.status(500).json({ error: err.message });
       }
-      res.json({ success: true, projectId: result.insertId });
+
+      const insertedId = result.insertId;
+
+      // 2️⃣ Ambil data join project dan product
+      const sqlJoin = `
+        SELECT 
+          pproj.id AS project_product_id,
+          pproj.keterangan,
+          prj.name AS project_name,
+          prod.name AS product_name,
+          prod.description AS product_description,
+          prj.client_id
+        FROM project_product pproj
+        JOIN project prj ON pproj.project_id = prj.id
+        JOIN products prod ON pproj.product_id = prod.id
+        WHERE pproj.id = ?
+      `;
+
+      db.query(sqlJoin, [insertedId], (err2, rows) => {
+        if (err2) {
+          console.error("Query join error:", err2);
+          return res.status(500).json({ error: err2.message });
+        }
+
+        if (rows.length === 0) {
+          return res.status(404).json({ error: "Data tidak ditemukan setelah insert" });
+        }
+
+        const data = rows[0];
+
+        // 3️⃣ Ambil user dengan role_id = 1
+        db.query("SELECT email FROM users WHERE role_id = 1", async (err3, users) => {
+          if (err3) {
+            console.error("Query user error:", err3);
+            return res.status(500).json({ error: err3.message });
+          }
+
+          if (users.length === 0) {
+            return res.json({
+              success: true,
+              projectProductId: insertedId,
+              message: "Data tersimpan, tapi tidak ada user dengan role_id = 1",
+            });
+          }
+
+          const emailList = users.map((u) => u.email).join(",");
+
+          // 4️⃣ Siapkan isi notifikasi
+          const subject = `Notifikasi: Produk "${data.product_name}" telah ditambahkan ke Project "${data.project_name}"`;
+
+          const html = `
+            <h2>Notifikasi Penambahan Produk</h2>
+            <p>Produk <strong>${data.product_name}</strong> telah ditambahkan ke project <strong>${data.project_name}</strong>.</p>
+            <p><em>${data.product_description || "Tidak ada deskripsi produk."}</em></p>
+            <hr>
+            <p><strong>Keterangan tambahan:</strong> ${data.keterangan || "-"}</p>
+          `;
+
+          // 5️⃣ Kirim email
+          try {
+            const resultEmail = await sendEmail(
+              emailList,
+              subject,
+              `Produk ${data.product_name} telah ditambahkan ke project ${data.project_name}`,
+              html
+            );
+            console.log("Email result:", resultEmail);
+          } catch (e) {
+            console.error("Gagal kirim email:", e);
+          }
+
+          // 6️⃣ Response ke client
+          res.json({ success: true, projectProductId: insertedId });
+        });
+      });
     }
   );
+});
 
-})
 
 
 app.get("/clients", (req, res) => {
