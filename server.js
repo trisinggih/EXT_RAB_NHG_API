@@ -439,7 +439,7 @@ select DISTINCT a.project_id, a.pekerjaan_id,
           JSON_OBJECT(
             'id', d.id,
             'tambahan', d.tambahan,
-            'estimasi_price', d.estimasi_price,
+            'estimasi_price', (d.estimasi_price * d.jumlah),
             'jumlah', d.jumlah, 
             'satuan', d.satuan
           )
