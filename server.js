@@ -309,7 +309,7 @@ app.post("/simpanproject", (req, res) => {
 
 
 app.post("/simpanproduct", (req, res) => {
-  const { keterangan, product_id, project_id } = req.body;
+  const { keterangan, product_id, project_id, jumlah, satuan } = req.body;
 
   if (!product_id || !project_id) {
     return res.status(400).json({ error: "Semua field wajib diisi" });
@@ -317,8 +317,8 @@ app.post("/simpanproduct", (req, res) => {
 
   // 1️⃣ Insert ke tabel project_product
   db.query(
-    "INSERT INTO project_product (keterangan, product_id, project_id) VALUES (?, ?, ?)",
-    [keterangan, product_id, project_id],
+    "INSERT INTO project_product (keterangan, product_id, project_id, jumlah, satuan) VALUES (?, ?, ?)",
+    [keterangan, product_id, project_id, jumlah, satuan],
     (err, result) => {
       if (err) {
         console.error("Insert project_product error:", err);
