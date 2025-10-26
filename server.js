@@ -317,7 +317,7 @@ app.post("/simpanproduct", (req, res) => {
 
   // 1️⃣ Insert ke tabel project_product
   db.query(
-    "INSERT INTO project_product (keterangan, product_id, project_id, jumlah, satuan) VALUES (?, ?, ?)",
+    "INSERT INTO project_product (keterangan, product_id, project_id, jumlah, satuan) VALUES (?, ?, ?, ?, ?)",
     [keterangan, product_id, project_id, jumlah, satuan],
     (err, result) => {
       if (err) {
